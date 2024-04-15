@@ -1,3 +1,0 @@
-/home/talocha/C/AlignFour/CMakeFiles/AlignFour.dir
-/home/talocha/C/AlignFour/CMakeFiles/edit_cache.dir
-/home/talocha/C/AlignFour/CMakeFiles/rebuild_cache.dir

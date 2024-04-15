@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/AlignFour.dir/src/main.c.o CMakeFiles/AlignFour.dir/src/ai.c.o CMakeFiles/AlignFour.dir/src/gameboard.c.o -o AlignFour
