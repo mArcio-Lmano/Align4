@@ -18,10 +18,10 @@ int main() {
       winner = checkWin(gameBoard);
       gameBoard->player *= -1;
       // NOTE: Debug
-      ai->board = copyBoard(gameBoard->board);
-      int r = minmax(ai, 2, gameBoard->player);
-      // printAi(ai);
-      // printf("Number of Possible Moves: %d\n", ai->number_possible_moves);
+      // ai->board = copyBoard(gameBoard->board);
+      // int *scr = malloc(sizeof(int));
+      // int *bst_mv = malloc(sizeof(int));
+      // int r = minmax(ai, 5, gameBoard->player, ai->board, scr, bst_mv);
     }
     if (winner != 0) {
       break;
@@ -36,6 +36,7 @@ int main() {
     free(gameBoard->board[i]);
   }
   free(gameBoard->board);
-
+  free(gameBoard);
+  free(ai);
   return 0;
 }

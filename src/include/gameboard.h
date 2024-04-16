@@ -9,6 +9,12 @@
     __typeof__(b) _b = (b);                                                    \
     _a < _b ? _a : _b;                                                         \
   })
+#define max(a, b)                                                              \
+  ({                                                                           \
+    __typeof__(a) _a = (a);                                                    \
+    __typeof__(b) _b = (b);                                                    \
+    _a > _b ? _a : _b;                                                         \
+  })
 
 // Forward declaration of Ai header
 typedef struct Ai Ai;
@@ -24,7 +30,9 @@ typedef struct {
   int **board;
   int player;
   int player_last_piece[2];
+  int *positions;
 } GameBoard;
+
 GameBoard *initializeGameBoard();
 void printBoard(int **board, int rows, int cols);
 int playPlayer(GameBoard *game_board, Ai *ai);

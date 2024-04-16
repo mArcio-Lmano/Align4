@@ -63,6 +63,7 @@ int playPlayer(GameBoard *game_board, Ai *ai) {
       printAiPossibleMoves(ai);
     }
   }
+  free(flags);
   return res;
 }
 
@@ -100,14 +101,9 @@ int checkWin(GameBoard *game_board) {
   delta_plus_y = min(3, y);
   delta_minus_y = min(3, game_board->rows - 1 - y);
 
-  // printf("DeltaX : %d, %d\n", delta_plus_x, delta_minus_x);
-  // printf("DeltaY : %d, %d\n", delta_plus_y, delta_minus_y);
-
   // NOTE: Check Hoprizontal
   int x_minus = x - delta_minus_x;
   int x_plus = x + delta_plus_x;
-  // printf("x: %d, x-: %d, x+: %d, dx: %d\n", x, x_minus, x_plus,
-  //        x_plus + x_minus);
   int *row = game_board->board[y];
   int row_sum = 0;
   for (int i = x_minus; i <= x_plus; i++) {
@@ -121,8 +117,6 @@ int checkWin(GameBoard *game_board) {
   // NOTE: Check vertical
   int y_minus = y - delta_plus_y;
   int y_plus = y + delta_minus_y;
-  // printf("y: %d, y-: %d, y+: %d, dy: %d\n", y, y_minus, y_plus,
-  //        y_plus + y_minus);
   int column_sum = 0;
   for (int i = y_minus; i <= y_plus; i++) {
     column_sum += game_board->board[i][x];
@@ -138,15 +132,13 @@ int checkWin(GameBoard *game_board) {
   delta_diagonal1_minus = min(delta_minus_x, delta_minus_y);
   delta_diagonal1_plus = min(delta_plus_x, delta_plus_y);
 
-  // printf("Delta Dig : %d, %d\n", delta_diagonal1_plus,
-  // delta_diagonal1_minus); printf("x: %d, y: %d\n", x, y);
-
+  printf("Diagonal1\n");
   int diagonal1_sum = 0;
   for (int i = -delta_diagonal1_minus; i <= delta_diagonal1_plus; i++) {
     int dig_x = x + i;
     int dig_y = y - i;
+    printf("Dig x: %d, y: %d\n", dig_x, dig_y);
     diagonal1_sum += game_board->board[dig_y][dig_x];
-    // printf("Digx: %d, Digy: %d\n", dig_x, dig_y);
   }
 
   if (diagonal1_sum == 4 || diagonal1_sum == -4) {
@@ -158,25 +150,19 @@ int checkWin(GameBoard *game_board) {
   int delta_diagonal2_minus, delta_diagonal2_plus;
   delta_diagonal2_minus = min(delta_plus_x, delta_minus_y);
   delta_diagonal2_plus = min(delta_minus_x, delta_plus_y);
-  // printf("Delta Dig : %d, %d\n", delta_diagonal2_plus,
-  // delta_diagonal2_minus);
-  //
-  // printf("x: %d, y: %d\n", x, y);
 
+  printf("Diagonal2\n");
+  printf("Minus: %d, Plus: %d\n", delta_diagonal2_minus, delta_diagonal2_plus);
   int diagonal2_sum = 0;
   for (int i = -delta_diagonal2_minus; i <= delta_diagonal2_plus; i++) {
-    int dig_x = x + i;
+    int dig_x = x - i;
     int dig_y = y - i;
+    printf("Dig x: %d, y: %d\n", dig_x, dig_y);
     diagonal2_sum += game_board->board[dig_y][dig_x];
-    // printf("Digx: %d, Digy: %d\n", dig_x, dig_y);
   }
 
   if (diagonal2_sum == 4 || diagonal2_sum == -4) {
     win = diagonal2_sum / 4;
   }
-  // printf("Row Sum: %d\n", row_sum);
-  // printf("Column Sum: %d\n", column_sum);
-  // printf("Diagonal1 Sum: %d\n", diagonal1_sum);
-  // printf("Diagonal2 Sum: %d\n", diagonal2_sum);
   return win;
 }

@@ -16,8 +16,8 @@ Ai *initializeAi();
 void removePossiblePlay(Ai *ai, int play);
 int **copyBoard(int **board);
 int *playPlayerOnBoard(int **board, int row, int new_piece, int player);
+int minmax(Ai *ai, int depth, int player, int **board, int *scr, int *bst_mv);
 
-int minmax(Ai *ai, int depth, int player);
 // NOTE: For debugging
 void printAi(Ai *ai);
 void printAiGameBoardScores(Ai *ai);

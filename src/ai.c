@@ -91,31 +91,66 @@ void removePossiblePlay(Ai *ai, int play) {
   ai->number_possible_moves--;
 }
 
+int minmaxGetScore(Ai *ai, int **board) {
+  int res = 0;
+  for (int i = 0; i < ROWS; i++) {
+    for (int j = 0; j < COLS; j++) {
+      res += ai->board_score[i][j] * board[i][j];
+    }
+  }
+  return res;
+}
+
 // TODO: Make the minmax algorithm
 //       Make a way to see if the colls are full, to check the possible moves
-int minmax(Ai *ai, int depth, int player) {
+//       Find a better way to evaluate the score, rigth now it is bad.
+int minmax(Ai *ai, int depth, int player, int **board, int *scr, int *bst_mv) {
   int scale = 1;
-
+  int r = 0;
+  // printf("Player %d Found at depth: %d, With a Score: %d\n", player, depth,
+  //        *scr);
   if (depth <= 0) {
-    return 0;
-  }
-
-  else {
-    printf("MINMAX Algorithm\n");
-    printAiPossibleMoves(ai);
-    int **board = copyBoard(ai->board);
-    int row = 0;
-    printBoard(board, ROWS, COLS);
+    return minmaxGetScore(ai, board);
+  } else if (player == 1) {
+    *scr = max(ai->sum_board_scores * -scale, *scr);
+    // printBoard(board, ROWS, COLS);
     for (int i = 0; i < ai->number_possible_moves; i++) {
       int move = ai->possible_moves[i];
-      int *res = playPlayerOnBoard(board, ROWS - 1, move - 1, 1);
+      int *res = playPlayerOnBoard(board, ROWS - 1, move - 1, player);
       if (res[0] != 0) {
-        printf("Something Went Wrong");
+        printf("Something Went Wrong\n");
       } else {
-        printf("Move: %d\n", move);
-        printBoard(board, ROWS, COLS);
+        r = minmax(ai, depth - 1, -1 * player, board, scr, bst_mv) * scale;
+        if (r > *scr) {
+          *scr = r;
+          *bst_mv = res[2];
+        }
+        board[res[1]][res[2]] = 0;
+        // printf("Move: %d, Row: %d, NewPiece: %d\n", move, res[1], res[2]);
+        // printBoard(board, ROWS, COLS);
+      }
+    }
+  } else {
+    *scr = min(ai->sum_board_scores * scale, *scr);
+    // printBoard(board, ROWS, COLS);
+    for (int i = 0; i < ai->number_possible_moves; i++) {
+      int move = ai->possible_moves[i];
+      int *res = playPlayerOnBoard(board, ROWS - 1, move - 1, player);
+      if (res[0] != 0) {
+        printf("Something Went Wrong\n");
+      } else {
+        // printf("Move: %d, Row: %d, NewPiece: %d\n", move, res[1], res[2]);
+        // printBoard(board, ROWS, COLS);
+        r = minmax(ai, depth - 1, -1 * player, board, scr, bst_mv) * scale;
+        // printf("R: %d, move: %d\n", r, move);
+        if (r < *scr) {
+          *scr = r;
+          *bst_mv = res[2];
+        }
+        board[res[1]][res[2]] = 0;
       }
     }
   }
-  return 0;
+  // printf("Player %d  Score: %d\n", player, r);
+  return *scr;
 }
