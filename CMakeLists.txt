@@ -3,25 +3,31 @@ project(AlignFour)
 set(CMAKE_C_STANDARD 11)
 
 # Add your source files here
-set(SOURCE_FILES 
-    src/main.c
+set(COMMON_FILES 
     src/ai.c
     src/gameboard.c
 )
 
-set (HEADER_FILES
-    src/include/ai.h
-    src/include/gameboard.h
+set(MAIN_FILES
+    src/main.c
 )
 
-ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES})
-# Add any header files if necessary
-# set(HEADER_FILES
-#     include/header1.h
-#     include/header2.h
-# )
+set(TEST_FILES
+    test/test_main.c
+    test/test_ai.c
+    test/test_gameboard.c
+)
 
-# Include directories
-# include_directories(include)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/src/include
+)
 
-# Add executable target
+find_library(CUNIT_LIB cunit)
+include_directories(${CMAKE_SOURCE_DIR}/src/include ${CUNIT_INCLUDE_DIRS})
+
+ADD_EXECUTABLE(${PROJECT_NAME} ${MAIN_FILES} ${COMMON_FILES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
+
+ADD_EXECUTABLE(tests ${TEST_FILES} ${COMMON_FILES})
+target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries(tests ${CUNIT_LIB})

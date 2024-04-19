@@ -6,20 +6,6 @@
 #include <stdlib.h>
 
 // NOTE: For Debuging
-void printAi(Ai *ai) {
-  printAiGameBoardScores(ai);
-  printAiGameBoard(ai);
-  printAiPossibleMoves(ai);
-}
-void printAiGameBoardScores(Ai *ai) {
-  printf("Game Board Scores:\n");
-  for (int i = 0; i < ROWS; i++) {
-    for (int j = 0; j < COLS; j++) {
-      printf(" %d ", ai->board_score[i][j]);
-    }
-    printf("\n");
-  }
-}
 void printAiGameBoard(Ai *ai) {
   printf("Game Board: \n");
   for (int i = 0; i < ROWS; i++) {
@@ -36,41 +22,33 @@ void printAiPossibleMoves(Ai *ai) {
   }
   printf("\n");
 }
-void printAiBoardSum(Ai *ai) {
-  printf("\nAi BoardSum: %d\n", ai->sum_board_scores);
+void printAi(Ai *ai) {
+  printAiGameBoard(ai);
+  printAiPossibleMoves(ai);
 }
 //
 
 Ai *initializeAi() {
   Ai *ai = (Ai *)malloc(sizeof(Ai));
-  int values[ROWS][COLS] = {{1, 1, 1, 1, 1, 1, 1}, {1, 2, 2, 2, 2, 2, 1},
-                            {1, 2, 3, 4, 3, 2, 1}, {1, 2, 3, 4, 3, 2, 1},
-                            {1, 2, 2, 2, 2, 2, 1}, {1, 1, 1, 1, 1, 1, 1}};
-  // ai->board = malloc(ROWS * sizeof(int *));
-  ai->sum_board_scores = 0;
-  for (int i = 0; i < ROWS; i++) {
-    // ai->board[i] = malloc(COLS * sizeof(int));
-    for (int j = 0; j < COLS; j++) {
-      ai->board_score[i][j] = values[i][j];
-      ai->sum_board_scores += values[i][j];
-    }
-  }
   for (int i = 0; i < COLS; i++) {
     ai->possible_moves[i] = i + 1;
   }
   ai->number_possible_moves = COLS;
+  ai->board_full = 0;
+  ai->player1_number_stones = 0;
+  ai->player2_number_stones = 0;
   return ai;
 }
 
 int **copyBoard(int **board) {
-  int **borad_copy = malloc(ROWS * sizeof(int *));
-  for (int i = 0; i < ROWS; i++) {
-    borad_copy[i] = malloc(COLS * sizeof(int));
-    for (int j = 0; j < COLS; j++) {
-      borad_copy[i][j] = board[i][j];
+  int **copy_board = (int **)malloc(ROWS * sizeof(int *));
+  for (int i = 0; i < ROWS; ++i) {
+    copy_board[i] = (int *)malloc(COLS * sizeof(int));
+    for (int j = 0; j < COLS; ++j) {
+      copy_board[i][j] = board[i][j];
     }
   }
-  return borad_copy;
+  return copy_board;
 }
 
 void removePossiblePlay(Ai *ai, int play) {
@@ -91,66 +69,100 @@ void removePossiblePlay(Ai *ai, int play) {
   ai->number_possible_moves--;
 }
 
-int minmaxGetScore(Ai *ai, int **board) {
-  int res = 0;
-  for (int i = 0; i < ROWS; i++) {
-    for (int j = 0; j < COLS; j++) {
-      res += ai->board_score[i][j] * board[i][j];
-    }
-  }
-  return res;
+Ai *copyAi(Ai *ai) {
+  Ai *new_ai = (Ai *)malloc(sizeof(Ai));
+  new_ai->board = copyBoard(ai->board);
+  new_ai->number_possible_moves = ai->number_possible_moves;
+  new_ai->player1_number_stones = ai->player1_number_stones;
+  new_ai->player2_number_stones = ai->player2_number_stones;
+  new_ai->board_full = ai->board_full;
+  return new_ai;
 }
 
-// TODO: Make the minmax algorithm
-//       Make a way to see if the colls are full, to check the possible moves
-//       Find a better way to evaluate the score, rigth now it is bad.
-int minmax(Ai *ai, int depth, int player, int **board, int *scr, int *bst_mv) {
-  int scale = 1;
-  int r = 0;
-  // printf("Player %d Found at depth: %d, With a Score: %d\n", player, depth,
-  //        *scr);
-  if (depth <= 0) {
-    return minmaxGetScore(ai, board);
-  } else if (player == 1) {
-    *scr = max(ai->sum_board_scores * -scale, *scr);
-    // printBoard(board, ROWS, COLS);
-    for (int i = 0; i < ai->number_possible_moves; i++) {
-      int move = ai->possible_moves[i];
-      int *res = playPlayerOnBoard(board, ROWS - 1, move - 1, player);
-      if (res[0] != 0) {
-        printf("Something Went Wrong\n");
-      } else {
-        r = minmax(ai, depth - 1, -1 * player, board, scr, bst_mv) * scale;
-        if (r > *scr) {
-          *scr = r;
-          *bst_mv = res[2];
+int calculateMinMaxScore(Ai *ai, int player) {
+  int number_stones;
+  if (player == 1) {
+    number_stones = ai->player1_number_stones;
+  } else {
+    number_stones = ai->player2_number_stones;
+  }
+
+  int r = player * (ROWS * COLS - number_stones);
+  return r;
+}
+
+int minMax(Ai *ai, int depth, int player, int *best_move) {
+  int score = 0;
+  Ai *next_ai = copyAi(ai);
+  if (depth == 0) {
+    for (int i = 0; i < ROWS; ++i) {
+      free(next_ai->board[i]);
+    }
+    free(next_ai->board);
+    free(next_ai);
+    return calculateMinMaxScore(ai, player);
+  }
+
+  else if (player == 1) {
+    score = -(ROWS * COLS);
+    next_ai->player1_number_stones++;
+    for (int i = 0; i < next_ai->number_possible_moves; ++i) {
+      int move = next_ai->possible_moves[i];
+      int *res = playPlayerOnBoard(next_ai->board, ROWS - 1, move - 1, player);
+      int flags[3];
+      flags[0] = res[0];
+      flags[1] = res[1];
+      flags[2] = res[2];
+      free(res);
+      if (flags[0] == 0) {
+        int winner = checkWin(flags[2], flags[1], next_ai->board);
+        if (winner == 1) {
+          *best_move = move;
+          return calculateMinMaxScore(next_ai, player);
         }
-        board[res[1]][res[2]] = 0;
-        // printf("Move: %d, Row: %d, NewPiece: %d\n", move, res[1], res[2]);
-        // printBoard(board, ROWS, COLS);
+        int r = minMax(next_ai, depth - 1, player * -1, best_move);
+        next_ai->board[flags[1]][flags[2]] = 0;
+        if (r > score) {
+          *best_move = move;
+          score = r;
+        }
+      } else {
+        removePossiblePlay(next_ai, move);
       }
     }
   } else {
-    *scr = min(ai->sum_board_scores * scale, *scr);
-    // printBoard(board, ROWS, COLS);
-    for (int i = 0; i < ai->number_possible_moves; i++) {
-      int move = ai->possible_moves[i];
-      int *res = playPlayerOnBoard(board, ROWS - 1, move - 1, player);
-      if (res[0] != 0) {
-        printf("Something Went Wrong\n");
-      } else {
-        // printf("Move: %d, Row: %d, NewPiece: %d\n", move, res[1], res[2]);
-        // printBoard(board, ROWS, COLS);
-        r = minmax(ai, depth - 1, -1 * player, board, scr, bst_mv) * scale;
-        // printf("R: %d, move: %d\n", r, move);
-        if (r < *scr) {
-          *scr = r;
-          *bst_mv = res[2];
+    score = (ROWS * COLS);
+    next_ai->player2_number_stones++;
+    for (int i = 0; i < next_ai->number_possible_moves; ++i) {
+      int move = next_ai->possible_moves[i];
+      int *res = playPlayerOnBoard(next_ai->board, ROWS - 1, move - 1, player);
+      int flags[3];
+      flags[0] = res[0];
+      flags[1] = res[1];
+      flags[2] = res[2];
+      free(res);
+      if (flags[0] == 0) {
+        int winner = checkWin(flags[2], flags[1], next_ai->board);
+        if (winner == -1) {
+          *best_move = move;
+          return calculateMinMaxScore(next_ai, player);
         }
-        board[res[1]][res[2]] = 0;
+        int r = minMax(next_ai, depth - 1, player * -1, best_move);
+        next_ai->board[flags[1]][flags[2]] = 0;
+        if (r < score) {
+          *best_move = move;
+          score = r;
+        }
+      } else {
+        removePossiblePlay(next_ai, move);
       }
     }
   }
-  // printf("Player %d  Score: %d\n", player, r);
-  return *scr;
+
+  for (int i = 0; i < ROWS; ++i) {
+    free(next_ai->board[i]);
+  }
+  free(next_ai->board);
+  free(next_ai);
+  return score;
 }

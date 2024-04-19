@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Function to initialize the game board
 GameBoard *initializeGameBoard() {
   GameBoard *game = (GameBoard *)malloc(sizeof(GameBoard));
 
@@ -20,10 +19,10 @@ GameBoard *initializeGameBoard() {
       game->board[i][j] = 0;
     }
   }
+  game->positions_length = 0;
   return game;
 }
 
-// Function to print the game board
 void printBoard(int **board, int rows, int cols) {
   printf("Game Board\n");
   for (int i = 0; i < rows; ++i) {
@@ -37,31 +36,38 @@ void printBoard(int **board, int rows, int cols) {
   printf("===============\n");
 }
 
-int playPlayer(GameBoard *game_board, Ai *ai) {
-  char piece =
-      game_board->player == 1 ? 'X' : (game_board->player == -1 ? 'O' : ' ');
+int getUserInput() {
+  int input;
+  scanf("%d", &input);
+  return input;
+}
+
+int playPlayer(GameBoard *game, Ai *ai, InputFunction getInput) {
+  char piece = game->player == 1 ? 'X' : (game->player == -1 ? 'O' : ' ');
   printf("Player '%c' Turn\n", piece);
   int new_piece = -1;
   while (new_piece < 1 || new_piece > 7) {
     printf("Where do you want to play?: ");
-    scanf("%d", &new_piece);
+    new_piece = getInput();
   }
-  int **board = game_board->board;
-  int row = game_board->rows - 1;
+  int **board = game->board;
+  int row = game->rows - 1;
   new_piece--;
 
-  int *flags = playPlayerOnBoard(board, row, new_piece, game_board->player);
+  int *flags = playPlayerOnBoard(board, row, new_piece, game->player);
   int res = flags[0];
   row = flags[1];
   new_piece = flags[2];
 
   if (res == 0 && row >= 0) {
-    game_board->player_last_piece[0] = row;
-    game_board->player_last_piece[1] = new_piece;
+    game->player_last_piece[0] = row;
+    game->player_last_piece[1] = new_piece;
     if (row == 0) {
       removePossiblePlay(ai, new_piece + 1);
       printAiPossibleMoves(ai);
     }
+    game->positions[game->positions_length] = new_piece;
+    game->positions_length++;
   }
   free(flags);
   return res;
@@ -69,12 +75,11 @@ int playPlayer(GameBoard *game_board, Ai *ai) {
 
 int *playPlayerOnBoard(int **board, int row, int new_piece, int player) {
   // NOTE: r = [exit_status, row, new_piece]
-  int *r = malloc(3 * sizeof(int));
+  int *r = (int *)malloc(3 * sizeof(int));
 
   while (row >= 0 && board[row][new_piece] != 0) {
     row--;
   }
-
   if (row >= 0) {
     board[row][new_piece] = player;
     r[0] = 0;
@@ -89,25 +94,23 @@ int *playPlayerOnBoard(int **board, int row, int new_piece, int player) {
   return r;
 }
 
-int checkWin(GameBoard *game_board) {
+// int checkWin(GameBoard *game_board) {
+int checkWin(int x, int y, int **board) {
   int win = 0;
   int delta_plus_x, delta_minus_x, delta_plus_y, delta_minus_y;
 
-  int x = game_board->player_last_piece[1];
-  int y = game_board->player_last_piece[0];
-
-  delta_plus_x = min(3, game_board->columns - 1 - x);
+  delta_plus_x = min(3, COLS - 1 - x);
   delta_minus_x = min(3, x);
   delta_plus_y = min(3, y);
-  delta_minus_y = min(3, game_board->rows - 1 - y);
+  delta_minus_y = min(3, ROWS - 1 - y);
 
   // NOTE: Check Hoprizontal
   int x_minus = x - delta_minus_x;
   int x_plus = x + delta_plus_x;
-  int *row = game_board->board[y];
+  int *row = board[y];
   int row_sum = 0;
   for (int i = x_minus; i <= x_plus; i++) {
-    row_sum += game_board->board[y][i];
+    row_sum += board[y][i];
   }
 
   if (row_sum == 4 || row_sum == -4) {
@@ -119,7 +122,7 @@ int checkWin(GameBoard *game_board) {
   int y_plus = y + delta_minus_y;
   int column_sum = 0;
   for (int i = y_minus; i <= y_plus; i++) {
-    column_sum += game_board->board[i][x];
+    column_sum += board[i][x];
   }
 
   if (column_sum == 4 || column_sum == -4) {
@@ -132,13 +135,13 @@ int checkWin(GameBoard *game_board) {
   delta_diagonal1_minus = min(delta_minus_x, delta_minus_y);
   delta_diagonal1_plus = min(delta_plus_x, delta_plus_y);
 
-  printf("Diagonal1\n");
+  // printf("Diagonal1\n");
   int diagonal1_sum = 0;
   for (int i = -delta_diagonal1_minus; i <= delta_diagonal1_plus; i++) {
     int dig_x = x + i;
     int dig_y = y - i;
-    printf("Dig x: %d, y: %d\n", dig_x, dig_y);
-    diagonal1_sum += game_board->board[dig_y][dig_x];
+    // printf("Dig x: %d, y: %d\n", dig_x, dig_y);
+    diagonal1_sum += board[dig_y][dig_x];
   }
 
   if (diagonal1_sum == 4 || diagonal1_sum == -4) {
@@ -151,14 +154,11 @@ int checkWin(GameBoard *game_board) {
   delta_diagonal2_minus = min(delta_plus_x, delta_minus_y);
   delta_diagonal2_plus = min(delta_minus_x, delta_plus_y);
 
-  printf("Diagonal2\n");
-  printf("Minus: %d, Plus: %d\n", delta_diagonal2_minus, delta_diagonal2_plus);
   int diagonal2_sum = 0;
   for (int i = -delta_diagonal2_minus; i <= delta_diagonal2_plus; i++) {
     int dig_x = x - i;
     int dig_y = y - i;
-    printf("Dig x: %d, y: %d\n", dig_x, dig_y);
-    diagonal2_sum += game_board->board[dig_y][dig_x];
+    diagonal2_sum += board[dig_y][dig_x];
   }
 
   if (diagonal2_sum == 4 || diagonal2_sum == -4) {
